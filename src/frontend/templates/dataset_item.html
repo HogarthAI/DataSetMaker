@@ -1,0 +1,8 @@
+<div class="mb-2">
+    <button hx-get="/select-dataset/{{ dataset.id }}"
+            hx-target="#dataset-view"
+            hx-swap="outerHTML"
+            class="w-full px-4 py-2 text-left bg-gray-200 hover:bg-gray-300 rounded">
+        {{ dataset.name }}
+    </button>
+</div>

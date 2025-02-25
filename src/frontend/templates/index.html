@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dataset Manager</title>
+  <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 p-8">
+  <div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-md">
+    <h1 class="text-3xl font-bold mb-6">Dataset Manager</h1>
+
+    <button hx-post="/create-dataset" hx-target="#datasets" hx-swap="beforeend"
+      class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mb-4">
+      Create Dataset
+    </button>
+
+    <div id="datasets" class="mb-8" hx-get="/get-datasets" hx-trigger="load">
+    </div>
+
+    <div id="dataset-view" class="hidden">
+    </div>
+  </div>
+
+  <script>
+    function cycleRole(button) {
+      const roles = ['USER', 'ASSISTANT', 'SYSTEM'];
+      const currentRole = button.textContent.trim();
+      const currentIndex = roles.indexOf(currentRole);
+      const nextIndex = (currentIndex + 1) % roles.length;
+      button.textContent = roles[nextIndex];
+    }
+
+    function collectMessages() {
+      const messages = [];
+      document.querySelectorAll('.message-row').forEach(row => {
+        const role = row.querySelector('.role-button').textContent.trim().toLowerCase();
+        const content = row.querySelector('input, textarea').value;
+        if (content) {
+          messages.push({role, content});
+        }
+      });
+      return messages;
+    }
+
+    function saveToDataset(datasetId) {
+      const messages = collectMessages();
+      fetch(`/save-to-dataset/${datasetId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(messages)
+      });
+    }
+  </script>
+</body>
+
+</html>

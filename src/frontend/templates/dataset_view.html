@@ -1,0 +1,43 @@
+<div id="dataset-view" class="block">
+  <div class="border-t pt-4">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-2xl font-semibold">{{ dataset.name }}</h2>
+      <button onclick="saveToDataset('{{ dataset.id }}')"
+        class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+        Send to dataset
+      </button>
+    </div>
+
+    <div id="messages" class="space-y-4">
+      {% if dataset.messages %}
+      {% for message in dataset.messages %}
+      <div class="message-row">
+        <div class="flex items-start gap-4">
+          <button onclick="cycleRole(this)" class="role-button w-24 text-left font-semibold">
+            {{ message.role | upper }}
+          </button>
+          <input type="text" class="flex-1 p-2 border rounded" placeholder="Enter a message here"
+            value="{{ message.content }}">
+        </div>
+      </div>
+      {% endfor %}
+      {% else %}
+      <div class="message-row">
+        <div class="flex items-start gap-4">
+          <button onclick="cycleRole(this)" class="role-button w-24 text-left font-semibold">
+            USER
+          </button>
+          <input type="text" class="flex-1 p-2 border rounded" placeholder="Enter a message here">
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="flex gap-4 mt-4">
+      <button hx-post="/add-message-row" hx-target="#messages" hx-swap="beforeend"
+        class="flex items-center gap-2 px-4 py-2 border rounded hover:bg-gray-100">
+        <span>+ Message</span>
+      </button>
+    </div>
+  </div>
+</div>
