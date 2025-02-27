@@ -1,25 +1,16 @@
-import getpass
-import os
 import json
 
 from typing import List
 from fastapi import FastAPI, Request
 from fastapi.templating import Jinja2Templates
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, JSONResponse
 from uuid import uuid4
 from pydantic import BaseModel
 from langchain.chat_models import ChatOpenAI
 from langchain.schema import HumanMessage, AIMessage, SystemMessage
 
-if not os.environ.get("OPENAI_API_KEY"):
-    os.environ["OPENAI_API_KEY"] = getpass.getpass("Enter your OpenAI API key: ")
-
 chat = ChatOpenAI(temperature=0.7)
 app = FastAPI()
-
-# Serve static files
-app.mount("/static", StaticFiles(directory="src/frontend/static"), name="static")
 
 # Templates
 templates = Jinja2Templates(directory="src/frontend/templates")
