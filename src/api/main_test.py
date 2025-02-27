@@ -33,7 +33,7 @@ def test_get_datasets():
 
 
 def test_select_dataset():
-    create_response = client.post("/create-dataset")
+    client.post("/create-dataset")
     dataset_id = datasets[0].id
     response = client.get(f"/select-dataset/{dataset_id}")
     assert response.status_code == 200
@@ -60,12 +60,15 @@ def test_save_to_dataset():
         {"role": "assistant", "content": "Hi there!"},
     ]
     response = client.post(f"/save-to-dataset/{dataset_id}", json=messages)
+    print(response.json())
     assert response.status_code == 200
-    assert response.json() == {"status": "success"}
+    assert response.json() == {
+        "status": "success",
+        "message": "Dataset saved successfully",
+    }
     assert len(datasets[0].messages) == 2
 
 
 def test_save_to_nonexistent_dataset():
     response = client.post("/save-to-dataset/nonexistent-id", json=[])
-    assert response.status_code == 200
-    assert response.json() == {"status": "error", "message": "Dataset not found"}
+    assert response.status_code == 404

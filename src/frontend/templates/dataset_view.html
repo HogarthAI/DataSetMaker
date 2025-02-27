@@ -1,43 +1,128 @@
 <div id="dataset-view" class="block">
-  <div class="border-t pt-4">
-    <div class="flex justify-between items-center mb-4">
-      <h2 class="text-2xl font-semibold">{{ dataset.name }}</h2>
-      <button onclick="saveToDataset('{{ dataset.id }}')"
-        class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
-        Send to dataset
-      </button>
-    </div>
-
-    <div id="messages" class="space-y-4">
-      {% if dataset.messages %}
-      {% for message in dataset.messages %}
-      <div class="message-row">
-        <div class="flex items-start gap-4">
-          <button onclick="cycleRole(this)" class="role-button w-24 text-left font-semibold">
-            {{ message.role | upper }}
-          </button>
-          <input type="text" class="flex-1 p-2 border rounded" placeholder="Enter a message here"
-            value="{{ message.content }}">
+    <div class="border-t pt-4">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-semibold">{{ dataset.name }}</h2>
+            <button onclick="saveToDataset('{{ dataset.id }}')"
+                    class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                Send to dataset
+            </button>
         </div>
-      </div>
-      {% endfor %}
-      {% else %}
-      <div class="message-row">
-        <div class="flex items-start gap-4">
-          <button onclick="cycleRole(this)" class="role-button w-24 text-left font-semibold">
-            USER
-          </button>
-          <input type="text" class="flex-1 p-2 border rounded" placeholder="Enter a message here">
+        
+        <div id="messages" class="space-y-4">
+            {% if dataset.messages %}
+                {% for message in dataset.messages %}
+                    <div class="message-row">
+                        <div class="flex items-start gap-4">
+                            <button onclick="cycleRole(this)" 
+                                    class="role-button w-24 text-left font-semibold">
+                                {{ message.role | upper }}
+                            </button>
+                            <textarea class="flex-1 p-2 border rounded {% if message.role == 'assistant' %}bg-gray-50{% endif %}"
+                                      rows="3"
+                                      placeholder="Enter a message here">{{ message.content }}</textarea>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="message-row">
+                    <div class="flex items-start gap-4">
+                        <button onclick="cycleRole(this)" 
+                                class="role-button w-24 text-left font-semibold">
+                            USER
+                        </button>
+                        <textarea class="flex-1 p-2 border rounded"
+                                  rows="3"
+                                  placeholder="Enter a message here"></textarea>
+                    </div>
+                </div>
+            {% endif %}
         </div>
-      </div>
-      {% endif %}
+        
+        <div class="flex gap-4 mt-4">
+            <button onclick="addMessageRow()"
+                    class="flex items-center gap-2 px-4 py-2 border rounded hover:bg-gray-100">
+                <span>+ Message</span>
+            </button>
+            <button onclick="getAIResponse('{{ dataset.id }}')"
+                    class="flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600">
+                <span>AI Response</span>
+            </button>
+            <button class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                ▶ Run
+            </button>
+        </div>
     </div>
-
-    <div class="flex gap-4 mt-4">
-      <button hx-post="/add-message-row" hx-target="#messages" hx-swap="beforeend"
-        class="flex items-center gap-2 px-4 py-2 border rounded hover:bg-gray-100">
-        <span>+ Message</span>
-      </button>
-    </div>
-  </div>
 </div>
+
+<script>
+    function cycleRole(button) {
+        const roles = ['USER', 'ASSISTANT', 'SYSTEM'];
+        const currentRole = button.textContent.trim();
+        const currentIndex = roles.indexOf(currentRole);
+        const nextIndex = (currentIndex + 1) % roles.length;
+        button.textContent = roles[nextIndex];
+    }
+
+    function collectMessages() {
+        const messages = [];
+        document.querySelectorAll('.message-row').forEach(row => {
+            const role = row.querySelector('.role-button').textContent.trim().toLowerCase();
+            const content = row.querySelector('textarea').value.trim();
+            if (content) {
+                messages.push({ role, content });
+            }
+        });
+        return messages;
+    }
+
+    function getAIResponse(datasetId) {
+        const messages = collectMessages();
+        fetch(`/get-ai-response/${datasetId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(messages)
+        })
+        .then(response => response.text())
+        .then(html => {
+            document.querySelector('#messages').innerHTML = html;
+        });
+    }
+
+    function saveToDataset(datasetId) {
+        const messages = collectMessages();
+        fetch(`/save-to-dataset/${datasetId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(messages)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert('Dataset saved successfully');
+            } else {
+                alert('Error saving dataset: ' + data.message);
+            }
+        });
+    }
+
+    function addMessageRow() {
+        const newRow = `
+            <div class="message-row">
+                <div class="flex items-start gap-4">
+                    <button onclick="cycleRole(this)" 
+                            class="role-button w-24 text-left font-semibold">
+                        USER
+                    </button>
+                    <textarea class="flex-1 p-2 border rounded"
+                              rows="3"
+                              placeholder="Enter a message here"></textarea>
+                </div>
+            </div>
+        `;
+        document.querySelector('#messages').insertAdjacentHTML('beforeend', newRow);
+    }
+</script>
