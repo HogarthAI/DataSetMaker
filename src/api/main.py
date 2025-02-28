@@ -1,4 +1,5 @@
 import json
+import logging
 
 from typing import List
 from fastapi import FastAPI, Request
@@ -8,6 +9,8 @@ from uuid import uuid4
 from pydantic import BaseModel
 from langchain.chat_models import ChatOpenAI
 from langchain.schema import HumanMessage, AIMessage, SystemMessage
+
+logging.basicConfig(level=logging.DEBUG)
 
 chat = ChatOpenAI(temperature=0.7)
 app = FastAPI()
@@ -75,22 +78,28 @@ async def add_message_row(request: Request):
 
 @app.post("/get-ai-response/{dataset_id}")
 async def get_ai_response(request: Request, dataset_id: str):
-    # Get new messages from request
     data = await request.json()
     new_messages = [Message(**msg) for msg in data]
 
     try:
-        # Find the dataset
         dataset = next((d for d in datasets if d.id == dataset_id), None)
         if not dataset:
             return HTMLResponse("Dataset not found", status_code=404)
 
-        # Combine existing messages with new messages
-        all_messages = dataset.messages + new_messages
+        # Log the current state before adding new messages
+        logging.debug(
+            f"Before: {[(msg.role, msg.content) for msg in dataset.messages]}"
+        )
 
-        # Prepare messages for LangChain
+        # Avoid adding duplicate user messages
+        if dataset.messages and dataset.messages[-len(new_messages) :] == new_messages:
+            logging.debug("Detected duplicate messages, skipping addition.")
+        else:
+            dataset.messages.extend(new_messages)
+
+        # Prepare messages for AI processing
         langchain_messages = []
-        for msg in all_messages:
+        for msg in dataset.messages:
             if msg.role == "user":
                 langchain_messages.append(HumanMessage(content=msg.content))
             elif msg.role == "assistant":
@@ -98,24 +107,24 @@ async def get_ai_response(request: Request, dataset_id: str):
             elif msg.role == "system":
                 langchain_messages.append(SystemMessage(content=msg.content))
 
-        # Call ChatGPT API using LangChain
         ai_response = chat(langchain_messages)
-
-        # Get AI response
         ai_message = Message(role="assistant", content=ai_response.content)
 
-        # Add AI message to the list of all messages
-        all_messages.append(ai_message)
+        # Avoid adding duplicate AI responses
+        if dataset.messages and dataset.messages[-1] == ai_message:
+            logging.debug("AI response duplicate detected, skipping addition.")
+        else:
+            dataset.messages.append(ai_message)
 
-        # Update dataset with all messages
-        dataset.messages = all_messages
+        # Log the updated state after adding messages
+        logging.debug(f"After: {[(msg.role, msg.content) for msg in dataset.messages]}")
 
-        # Return updated messages template
         return templates.TemplateResponse(
-            "messages_list.html", {"request": request, "messages": all_messages}
+            "messages_list.html", {"request": request, "messages": dataset.messages}
         )
 
     except Exception as e:
+        logging.error(f"Error: {str(e)}")
         return HTMLResponse(f"Error: {str(e)}", status_code=500)
 
 

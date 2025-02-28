@@ -1,1 +1,7 @@
 src/frontend/node_modules
+
+*__pycache__
+
+*.pyc
+*UNKNOWN.egg-info
+.python-version
