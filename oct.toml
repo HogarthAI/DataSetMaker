@@ -1,0 +1,20 @@
+[project]
+name = "dataset-maker"
+
+[project.state_backend.local]
+path = "./state.json"
+
+[project.user_state_backend.local]
+path = "./user_state.json"
+
+[project.services.fastapi]
+image = ""
+dockerfile_path = "Dockerfile"
+internal_port = 8001
+external_port = 80
+cpus = 250
+memory = 512
+
+[project.services.fastapi.envs]
+OPENAI_API_KEY = "{{ env.OPENAI_API_KEY }}"
+
